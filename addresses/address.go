@@ -14,12 +14,17 @@ type Address struct {
 	Network       uint64         `json:"network" msgpack:"network"`
 	Version       AddressVersion `json:"version" msgpack:"version"`
 	PublicKeyHash []byte         `json:"publicKeyHash" msgpack:"publicKeyHash"`
-	PaymentID     []byte         `json:"paymentId" msgpack:"paymentId"`         // payment id
+	PaymentID     []byte         `json:"paymentID" msgpack:"paymentID"`         // payment id
 	PaymentAmount uint64         `json:"paymentAmount" msgpack:"paymentAmount"` // amount to be paid
 	PaymentAsset  []byte         `json:"paymentAsset" msgpack:"paymentAsset"`
 }
 
 func newAddr(network uint64, version AddressVersion, publicKeyHash []byte, paymentID []byte, paymentAmount uint64, paymentAsset []byte) (*Address, error) {
+
+	if len(publicKeyHash) == cryptography.PublicKeySize {
+		publicKeyHash = cryptography.GetPublicKeyHash(publicKeyHash)
+	}
+
 	if len(publicKeyHash) != cryptography.PublicKeyHashSize {
 		return nil, errors.New("Invalid PublicKeyHash size")
 	}
@@ -94,6 +99,10 @@ func DecodeAddr(input string) (*Address, error) {
 	buf, err := custom_base64.Base64Encoder.DecodeString(input)
 	if err != nil {
 		return nil, err
+	}
+
+	if len(buf) <= config.NETWORK_BYTE_PREFIX_LENGTH {
+		return nil, errors.New("Invalid Address Size")
 	}
 
 	prefix := buf[:config.NETWORK_BYTE_PREFIX_LENGTH]
@@ -190,7 +199,7 @@ func (a *Address) IsIntegratedAmount() bool {
 	return a.PaymentAmount > 0
 }
 
-// if address contains a paymentId
+// if address contains a paymentID
 func (a *Address) IsIntegratedPaymentID() bool {
 	return len(a.PaymentID) > 0
 }

@@ -50,6 +50,7 @@ func (chain *Blockchain) createGenesisBlockchainData() *BlockchainData {
 		0,
 		0,
 		0,
+		0,
 	}
 }
 
@@ -82,12 +83,33 @@ func (chain *Blockchain) initializeNewChain(chainData *BlockchainData, dataStora
 			if plainAcc, err = dataStorage.CreatePlainAccount(addr.PublicKeyHash); err != nil {
 				return
 			}
-			if err = plainAcc.DelegatedStake.CreateDelegatedStake(airdrop.Amount, 0, airdrop.DelegatedStakePublicKey, airdrop.DelegatedStakeFee); err != nil {
+
+			amount := airdrop.Amount
+
+			if amount > config_coins.ConvertToUnitsUint64Forced(500) {
+				if err = helpers.SafeUint64Sub(&amount, config_coins.ConvertToUnitsUint64Forced(500)); err != nil {
+					return
+				}
+
+				if accs, acc, err = dataStorage.CreateAccount(config_coins.NATIVE_ASSET_FULL, addr.PublicKeyHash); err != nil {
+					return
+				}
+				acc.Balance = config_coins.ConvertToUnitsUint64Forced(500)
+				if err = accs.Update(string(addr.PublicKeyHash), acc); err != nil {
+					return
+				}
+			}
+			if err = plainAcc.AddStakeAvailable(true, amount); err != nil {
+				return
+			}
+
+			if err = plainAcc.DelegatedStake.CreateDelegatedStake(0, airdrop.DelegatedStakePublicKey, airdrop.DelegatedStakeFee); err != nil {
 				return
 			}
 			if err = dataStorage.PlainAccs.Update(string(addr.PublicKeyHash), plainAcc); err != nil {
 				return
 			}
+
 		} else {
 			if accs, acc, err = dataStorage.CreateAccount(config_coins.NATIVE_ASSET_FULL, addr.PublicKeyHash); err != nil {
 				return
@@ -146,8 +168,10 @@ func (chain *Blockchain) init() (*BlockchainData, error) {
 
 		dataStorage := data_storage.NewDataStorage(writer)
 
-		if err = chain.initializeNewChain(chainData, dataStorage); err != nil {
-			return
+		if config.CONSENSUS == config.CONSENSUS_TYPE_FULL {
+			if err = chain.initializeNewChain(chainData, dataStorage); err != nil {
+				return
+			}
 		}
 
 		if config.SEED_WALLET_NODES_INFO {

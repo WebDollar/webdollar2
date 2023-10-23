@@ -4,8 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"pandora-pay/addresses"
+	"pandora-pay/blockchain/data_storage"
+	"pandora-pay/blockchain/data_storage/accounts"
+	"pandora-pay/blockchain/data_storage/accounts/account"
 	"pandora-pay/blockchain/data_storage/assets/asset"
-	"pandora-pay/blockchain/data_storage/plain_accounts"
 	"pandora-pay/blockchain/data_storage/plain_accounts/plain_account"
 	"pandora-pay/blockchain/transactions/transaction"
 	"pandora-pay/mempool"
@@ -87,18 +90,54 @@ func (builder *TxsBuilder) CreateSimpleTx(txData *TxBuilderCreateSimpleTx, propa
 	statusCallback("Wallet Addresses Found")
 
 	var tx *transaction.Transaction
-	var plainAcc *plain_account.PlainAccount
-	var chainHeight uint64
+	var chainHeight, nonce uint64
 
 	if err = store.StoreBlockchain.DB.View(func(reader store_db_interface.StoreDBTransactionInterface) (err error) {
 
-		plainAccs := plain_accounts.NewPlainAccounts(reader)
+		dataStorage := data_storage.NewDataStorage(reader)
+		var accs *accounts.Accounts
+		var acc *account.Account
+		var plainAcc *plain_account.PlainAccount
 
-		if plainAcc, err = plainAccs.GetPlainAccount(sendersWalletAddresses[0].PublicKey); err != nil {
-			return
-		}
-		if plainAcc == nil {
-			return errors.New("Plain Account doesn't exist")
+		for i, vin := range sendersWalletAddresses {
+
+			if txData.Vin[i].Amount > 0 {
+
+				if accs, err = dataStorage.AccsCollection.GetMap(txData.Vin[i].Asset); err != nil {
+					return err
+				}
+
+				if acc, err = accs.GetAccount(vin.PublicKeyHash); err != nil {
+					return
+				}
+
+				if acc == nil {
+					return errors.New("Account doesn't exist")
+				}
+
+				if acc.Balance < txData.Vin[i].Amount {
+					return errors.New("Not enought funds")
+				}
+
+			}
+
+			if plainAcc, err = dataStorage.PlainAccs.GetPlainAccount(sendersWalletAddresses[i].PublicKeyHash); err != nil {
+				return
+			}
+
+			if i == 0 && plainAcc != nil && nonce == 0 {
+				nonce = plainAcc.Nonce
+			}
+
+			switch txExtra := txData.Extra.(type) {
+			case *wizard.WizardTxSimpleExtraUnstake:
+				if plainAcc == nil {
+					return errors.New("Plain Account doesn't exist")
+				}
+				if plainAcc.StakeAvailable < txExtra.Amounts[i] {
+					return errors.New("You don't have enough staked coins")
+				}
+			}
 		}
 
 		return
@@ -108,7 +147,7 @@ func (builder *TxsBuilder) CreateSimpleTx(txData *TxBuilderCreateSimpleTx, propa
 
 	statusCallback("Balances checked")
 
-	txData.Nonce = builder.getNonce(txData.Nonce, sendersWalletAddresses[0].PublicKey, plainAcc.Nonce)
+	txData.Nonce = builder.getNonce(txData.Nonce, sendersWalletAddresses[0].PublicKeyHash, nonce)
 	statusCallback("Getting Nonce from Mempool")
 
 	vin := make([]*wizard.WizardTxSimpleTransferVin, len(txData.Vin))
@@ -122,8 +161,12 @@ func (builder *TxsBuilder) CreateSimpleTx(txData *TxBuilderCreateSimpleTx, propa
 
 	vout := make([]*wizard.WizardTxSimpleTransferVout, len(txData.Vout))
 	for i, v := range txData.Vout {
+		var addr *addresses.Address
+		if addr, err = addresses.DecodeAddr(v.Address); err != nil {
+			return nil, err
+		}
 		vout[i] = &wizard.WizardTxSimpleTransferVout{
-			v.PublicKeyHash,
+			addr.PublicKeyHash,
 			v.Amount,
 			v.Asset,
 		}

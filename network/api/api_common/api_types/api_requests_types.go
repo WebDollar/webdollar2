@@ -32,6 +32,10 @@ type APIAccountBaseRequest struct {
 }
 
 func (request *APIAccountBaseRequest) GetPublicKeyHash(required bool) ([]byte, error) {
+	if request == nil {
+		return nil, errors.New("argument missing")
+	}
+
 	var publicKeyHash []byte
 	if request.Address != "" {
 		address, err := addresses.DecodeAddr(request.Address)
@@ -39,7 +43,7 @@ func (request *APIAccountBaseRequest) GetPublicKeyHash(required bool) ([]byte, e
 			return nil, errors.New("Invalid address")
 		}
 		publicKeyHash = address.PublicKeyHash
-	} else if request.PublicKeyHash != nil && len(request.PublicKeyHash) == cryptography.PublicKeySize {
+	} else if request.PublicKeyHash != nil && len(request.PublicKeyHash) == cryptography.PublicKeyHashSize {
 		publicKeyHash = request.PublicKeyHash
 	} else if required {
 		return nil, errors.New("Invalid address or publicKey")
@@ -62,7 +66,7 @@ type APIUnsubscriptionRequest struct {
 type APIAuthenticated[T any] struct {
 	User string `json:"user" msgpack:"user"`
 	Pass string `json:"pass" msgpack:"pass"`
-	Data T      `json:",inline" msgpack:",inline"`
+	Data *T     `json:"req" msgpack:"req"`
 }
 
 func CheckAuthenticated(args url.Values) bool {

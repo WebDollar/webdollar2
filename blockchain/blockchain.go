@@ -11,10 +11,12 @@ import (
 	"pandora-pay/blockchain/blocks/block/difficulty"
 	"pandora-pay/blockchain/blocks/block_complete"
 	"pandora-pay/blockchain/data_storage"
+	"pandora-pay/blockchain/data_storage/assets/asset"
 	"pandora-pay/blockchain/data_storage/plain_accounts/plain_account"
 	"pandora-pay/blockchain/forging/forging_block_work"
 	"pandora-pay/blockchain/transactions/transaction"
 	"pandora-pay/config"
+	"pandora-pay/config/config_coins"
 	"pandora-pay/config/config_stake"
 	"pandora-pay/gui"
 	"pandora-pay/helpers"
@@ -101,7 +103,8 @@ func (chain *Blockchain) AddBlocks(blocksComplete []*block_complete.BlockComplet
 		chainData.TransactionsCount,                    //atomic copy
 		chainData.AccountsCount,                        //atomic copy
 		chainData.AssetsCount,                          //atomic copy
-		chainData.ConsecutiveSelfForged,                //atomic copy
+		chainData.Supply,
+		chainData.ConsecutiveSelfForged, //atomic copy
 	}
 
 	allTransactionsChanges := []*blockchain_types.BlockchainTransactionUpdate{}
@@ -218,6 +221,25 @@ func (chain *Blockchain) AddBlocks(blocksComplete []*block_complete.BlockComplet
 						return errors.New("Block Height is not right!")
 					}
 
+					//increase supply
+					var ast *asset.Asset
+					if ast, err = dataStorage.Asts.GetAsset(config_coins.NATIVE_ASSET_FULL); err != nil {
+						return
+					}
+
+					var reward, _ uint64
+					if reward, _, err = blockchain_types.ComputeBlockReward(blkComplete.Height, blkComplete.Txs); err != nil {
+						return
+					}
+
+					if err = ast.AddNativeSupply(true, reward); err != nil {
+						return
+					}
+					if err = dataStorage.Asts.Update(string(config_coins.NATIVE_ASSET_FULL), ast); err != nil {
+						return
+					}
+					newChainData.Supply = ast.Supply
+
 					var plainAcc *plain_account.PlainAccount
 					if plainAcc, err = dataStorage.PlainAccs.GetPlainAccount(blkComplete.Block.Forger); err != nil {
 						return
@@ -227,8 +249,6 @@ func (chain *Blockchain) AddBlocks(blocksComplete []*block_complete.BlockComplet
 						return errors.New("Forger Account deson't exist or hasn't delegated stake")
 					}
 
-					stakingAmount := plainAcc.DelegatedStake.GetDelegatedStakeAvailable()
-
 					if !bytes.Equal(blkComplete.Block.DelegatedStakePublicKey, plainAcc.DelegatedStake.DelegatedStakePublicKey) {
 						return errors.New("Block Staking Delegated Public Key is not matching")
 					}
@@ -237,8 +257,8 @@ func (chain *Blockchain) AddBlocks(blocksComplete []*block_complete.BlockComplet
 						return fmt.Errorf("Block Delegated Stake Fee doesn't match %d %d", blkComplete.Block.DelegatedStakeFee, plainAcc.DelegatedStake.DelegatedStakeFee)
 					}
 
-					if blkComplete.Block.StakingAmount != stakingAmount {
-						return fmt.Errorf("Block Staking Amount doesn't match %d %d", blkComplete.Block.StakingAmount, stakingAmount)
+					if blkComplete.Block.StakingAmount != plainAcc.StakeAvailable {
+						return fmt.Errorf("Block Staking Amount doesn't match %d %d", blkComplete.Block.StakingAmount, plainAcc.StakeAvailable)
 					}
 
 					if blkComplete.Block.StakingAmount < config_stake.GetRequiredStake(blkComplete.Block.Height) {
@@ -376,6 +396,7 @@ func (chain *Blockchain) AddBlocks(blocksComplete []*block_complete.BlockComplet
 						removedTxsList[removedCount] = writer.Get("tx:" + change.TxHashStr) //required because the garbage collector sometimes it deletes the underlying buffers
 						writer.Delete("tx:" + change.TxHashStr)
 						writer.Delete("txHash:" + change.TxHashStr)
+						writer.Delete("txBlock:" + change.TxHashStr)
 						removedCount += 1
 					}
 					if change.Inserted && insertedTxs[change.TxHashStr] != nil && removedTxHashes[change.TxHashStr] == nil {

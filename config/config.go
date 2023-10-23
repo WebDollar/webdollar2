@@ -48,7 +48,7 @@ var (
 
 const (
 	BLOCK_MAX_SIZE          uint64 = 1024 * 1024
-	BLOCK_TIME              uint64 = 90 //seconds
+	BLOCK_TIME              uint64 = 30 //seconds
 	DIFFICULTY_BLOCK_WINDOW uint64 = 10
 	FORK_MAX_UNCLE_ALLOWED  uint64 = 60
 	FORK_MAX_DOWNLOAD       uint64 = 20
@@ -98,17 +98,11 @@ var (
 )
 
 var (
-	NETWORK_ADDRESS_URL_STRING      string
-	NETWORK_KNOWN_NODES_LIMIT       int32 = 5000
-	NETWORK_KNOWN_NODES_LIST_RETURN       = 100
+	NETWORK_ADDRESS_URL_STRING           string
+	NETWORK_WEBSOCKET_ADDRESS_URL_STRING string
+	NETWORK_KNOWN_NODES_LIMIT            int32 = 5000
+	NETWORK_KNOWN_NODES_LIST_RETURN            = 100
 )
-
-func StartConfig() {
-	rand.Seed(time.Now().UnixNano())
-	CPU_THREADS = runtime.GOMAXPROCS(0)
-	ARCHITECTURE = runtime.GOARCH
-	OS = runtime.GOOS
-}
 
 func InitConfig() (err error) {
 
@@ -167,14 +161,11 @@ func InitConfig() (err error) {
 
 	if NETWORK_SELECTED == TEST_NET_NETWORK_BYTE || NETWORK_SELECTED == DEV_NET_NETWORK_BYTE {
 
-		if globals.Arguments["--hcaptcha-site-key"] != nil {
-			HCAPTCHA_SITE_KEY = globals.Arguments["--hcaptcha-site-key"].(string)
-		}
 		if globals.Arguments["--hcaptcha-secret"] != nil {
 			HCAPTCHA_SECRET_KEY = globals.Arguments["--hcaptcha-secret"].(string)
 		}
 
-		if HCAPTCHA_SECRET_KEY != "" && HCAPTCHA_SITE_KEY != "" && globals.Arguments["--faucet-testnet-enabled"] == "true" {
+		if HCAPTCHA_SECRET_KEY != "" && globals.Arguments["--faucet-testnet-enabled"] == "true" {
 			FAUCET_TESTNET_ENABLED = true
 		}
 
@@ -197,4 +188,11 @@ func InitConfig() (err error) {
 	}
 
 	return
+}
+
+func init() {
+	rand.Seed(time.Now().UnixNano())
+	CPU_THREADS = runtime.GOMAXPROCS(0)
+	ARCHITECTURE = runtime.GOARCH
+	OS = runtime.GOOS
 }

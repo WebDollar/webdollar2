@@ -72,10 +72,7 @@ func (tx *TransactionSimple) IncludeTransaction(blockHeight uint64, txHash []byt
 	}
 
 	for _, vout := range tx.Vout {
-		if accs, err = dataStorage.AccsCollection.GetMap(vout.Asset); err != nil {
-			return
-		}
-		if acc, err = accs.GetAccount(vout.PublicKeyHash); err != nil {
+		if accs, acc, err = dataStorage.GetOrCreateAccount(vout.Asset, vout.PublicKeyHash); err != nil {
 			return
 		}
 		if err = acc.AddBalance(true, vout.Amount); err != nil {
@@ -88,6 +85,10 @@ func (tx *TransactionSimple) IncludeTransaction(blockHeight uint64, txHash []byt
 
 	switch tx.TxScript {
 	case SCRIPT_TRANSFER:
+	case SCRIPT_UNSTAKE:
+		if err = tx.Extra.IncludeTransactionExtra(blockHeight, tx.Bloom.VinPublicKeyHashes, tx.Vin, tx.Vout, dataStorage); err != nil {
+			return
+		}
 	}
 
 	return nil
@@ -142,6 +143,13 @@ func (tx *TransactionSimple) Validate() (err error) {
 
 	switch tx.TxScript {
 	case SCRIPT_TRANSFER:
+	case SCRIPT_UNSTAKE:
+		if tx.Extra == nil {
+			return errors.New("extra is not assigned")
+		}
+		if err = tx.Extra.Validate(tx.Vin, tx.Vout); err != nil {
+			return
+		}
 	default:
 		return errors.New("Invalid Simple TxScript")
 	}
@@ -171,7 +179,7 @@ func (tx *TransactionSimple) SerializeAdvanced(w *helpers.BufferWriter, inclSign
 	}
 
 	if tx.Extra != nil {
-		tx.Extra.Serialize(w, inclSignature)
+		tx.Extra.Serialize(w, tx.Vin, tx.Vout, inclSignature)
 	}
 }
 
@@ -189,6 +197,8 @@ func (tx *TransactionSimple) Deserialize(r *helpers.BufferReader) (err error) {
 	tx.TxScript = ScriptType(n)
 	switch tx.TxScript {
 	case SCRIPT_TRANSFER:
+	case SCRIPT_UNSTAKE:
+		tx.Extra = &transaction_simple_extra.TransactionSimpleExtraUnstake{}
 	default:
 		return errors.New("INVALID SCRIPT TYPE")
 	}
@@ -238,7 +248,7 @@ func (tx *TransactionSimple) Deserialize(r *helpers.BufferReader) (err error) {
 	}
 
 	if tx.Extra != nil {
-		return tx.Extra.Deserialize(r)
+		return tx.Extra.Deserialize(r, tx.Vin, tx.Vout)
 	}
 
 	return

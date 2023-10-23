@@ -1,11 +1,15 @@
 package start
 
 import (
+	"fmt"
 	"os"
+	"os/signal"
 	"pandora-pay/app"
 	"pandora-pay/blockchain"
 	"pandora-pay/blockchain/forging"
 	"pandora-pay/blockchain/genesis"
+	"pandora-pay/config"
+	"pandora-pay/config/arguments"
 	"pandora-pay/config/config_forging"
 	"pandora-pay/config/globals"
 	"pandora-pay/gui"
@@ -18,9 +22,10 @@ import (
 	"pandora-pay/txs_builder"
 	"pandora-pay/txs_validator"
 	"pandora-pay/wallet"
+	"syscall"
 )
 
-func _startMain() (err error) {
+func StartMainNow() (err error) {
 
 	if globals.MainStarted {
 		return
@@ -126,10 +131,28 @@ func _startMain() (err error) {
 	return
 }
 
-func startMain() {
+func InitMain(ready func()) {
+	var err error
 
-	if err := _startMain(); err != nil {
-		gui.GUI.Error(err)
+	argv := os.Args[1:]
+	if err = arguments.InitArguments(argv); err != nil {
+		saveError(err)
 	}
 
+	if err = config.InitConfig(); err != nil {
+		saveError(err)
+	}
+	globals.MainEvents.BroadcastEvent("main", "config initialized")
+
+	startMain()
+
+	if ready != nil {
+		ready()
+	}
+
+	exitSignal := make(chan os.Signal, 10)
+	signal.Notify(exitSignal, syscall.SIGINT, syscall.SIGTERM)
+	<-exitSignal
+
+	fmt.Println("Shutting down")
 }
