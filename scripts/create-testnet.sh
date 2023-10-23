@@ -59,11 +59,11 @@ if [ $continue == false ]; then
   genesisExists=true
   for ((i = 0; i < $nodes; ++i)); do
     echo "deleting $i"
-    rm -r ./_build/devnet_$i/DEV/logs 2>/dev/null
-    rm ./_build/devnet_$i/DEV/store/blockchain_store.bolt 2>/dev/null
-    rm ./_build/devnet_$i/DEV/store/mempool_store.bolt 2>/dev/null
+    rm -r ./_build/webd2/devnet_$i/DEV/logs 2>/dev/null
+    rm ./_build/webd2/devnet_$i/DEV/store/blockchain_store.bolt 2>/dev/null
+    rm ./_build/webd2/devnet_$i/DEV/store/mempool_store.bolt 2>/dev/null
 
-    if [ ! -e /_build/devnet_$i/DEV/genesis.data ]; then
+    if [ ! -e /_build/webd2/devnet_$i/DEV/genesis.data ]; then
       genesisExists=false
     fi
   done
@@ -76,11 +76,11 @@ if [ $continue == false ]; then
     for ((i = 0; i < $nodes; ++i)); do
 
       echo "delete wallet $i"
-      rm ./_build/devnet_$i/DEV/store/wallet_store.bolt 2>/dev/null
+      rm ./_build/webd2/devnet_$i/DEV/store/wallet_store.bolt 2>/dev/null
 
       echo "running $i"
       xterm -e go run main.go --instance="devnet" --instance-id="$i" --network="devnet" --wallet-export-shared-staked-address="auto,0,staked.address" --exit
-      mv ./_build/devnet_$i/DEV/staked.address ./_build/devnet_0/DEV/$i.stake
+      mv ./_build/webd2/devnet_$i/DEV/staked.address ./_build/webd2/devnet_0/DEV/$i.stake
       echo "executed"
 
     done
@@ -104,12 +104,12 @@ if [ $continue == false ]; then
   echo "let's copy the genesis file to each node"
   for ((i = 1; i < $nodes; ++i)); do
     echo "copying genesis $i"
-    cp ./_build/devnet_0/DEV/genesis.data ./_build/devnet_$i/DEV/genesis.data
+    cp ./_build/webd2/devnet_0/DEV/genesis.data ./_build/webd2/devnet_$i/DEV/genesis.data
   done
 
   echo "let's delete again the blockchain to restart"
   for ((i = 0; i < $nodes; ++i)); do
-    rm ./_build/devnet_$i/DEV/store/blockchain_store.bolt 2>/dev/null
+    rm ./_build/webd2/devnet_$i/DEV/store/blockchain_store.bolt 2>/dev/null
   done
 
   extraArgs+=" --skip-init-sync "
