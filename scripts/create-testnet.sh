@@ -22,6 +22,8 @@ race=false
 continue=false
 extraArgs=""
 
+killall -9 go
+
 for arg in $@; do
   if [ $arg == "--pprof" ]; then
     extraArgs+=" $arg "
