@@ -117,15 +117,11 @@ fi
 
 sleep 0.1
 
-for ((i = 0; i < $nodes; ++i)); do
-  echo "opening $i"
-  if $race; then
-    screen -S app$i -dm go run -race main.go --instance="devnet" --instance-id="$i" --tcp-server-port="5230" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
-  else
-    echo  --instance="devnet" --instance-id="$i" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true" $extraArgs
-    screen -S app$i -dm go run main.go --instance="devnet" --instance-id="$i" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
-  fi
-done
+#cloudflare public ports
+screen -S app0 -dm go run main.go --instance="devnet" --instance-id="0" --tcp-server-port="2053" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
+screen -S app1 -dm go run main.go --instance="devnet" --instance-id="1" --tcp-server-port="2083" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
+screen -S app2 -dm go run main.go --instance="devnet" --instance-id="2" --tcp-server-port="2087" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
+screen -S app3 -dm go run main.go --instance="devnet" --instance-id="3" --tcp-server-port="2096" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
 
 wait
 
