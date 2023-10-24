@@ -81,7 +81,7 @@ if [ $continue == false ]; then
       rm ./_build/webd2/devnet_$i/DEV/store/wallet_store.bolt 2>/dev/null
 
       echo "running $i"
-      go run main.go --instance="devnet" --instance-id="$i" --network="devnet" --wallet-export-shared-staked-address="auto,0,staked.address" --exit  /dev/null 2>&1
+      go run main.go --instance="devnet" --instance-id="$i" --network="devnet" --wallet-export-shared-staked-address="auto,0,staked.address" --exit
       mv ./_build/webd2/devnet_$i/DEV/staked.address ./_build/webd2/devnet_0/DEV/$i.stake
       echo "executed"
 
@@ -99,7 +99,7 @@ if [ $continue == false ]; then
 
   # A new genesis file will be created to restart the timestamp
   echo "creating genesis $str"
-  go run main.go --instance="devnet" --instance-id="0" --network="devnet" --create-new-genesis="$str" --exit  /dev/null 2>&1
+  go run main.go --instance="devnet" --instance-id="0" --network="devnet" --create-new-genesis="$str" --exit
 
   sleep 0.1
 
@@ -120,12 +120,14 @@ fi
 sleep 0.1
 
 #cloudflare public ports
-screen -dmS app0 go run main.go --instance="devnet" --instance-id="0" --tcp-server-port="2053" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
+go run main.go --instance="devnet" --instance-id="0" --tcp-server-port="2053" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
 screen -dmS app1 go run main.go --instance="devnet" --instance-id="1" --tcp-server-port="2082" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
 screen -dmS app2 go run main.go --instance="devnet" --instance-id="2" --tcp-server-port="2085" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
 screen -dmS app3 go run main.go --instance="devnet" --instance-id="3" --tcp-server-port="2093" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
 
 wait
+
+reset
 
 echo "finished"
 exit 1
