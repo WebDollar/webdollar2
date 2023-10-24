@@ -120,10 +120,10 @@ fi
 sleep 0.1
 
 #cloudflare public ports
-screen -S app0 -dm go run main.go --instance="devnet" --instance-id="0" --tcp-server-port="2053" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
-screen -S app1 -dm go run main.go --instance="devnet" --instance-id="1" --tcp-server-port="2083" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
-screen -S app2 -dm go run main.go --instance="devnet" --instance-id="2" --tcp-server-port="2087" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
-screen -S app3 -dm go run main.go --instance="devnet" --instance-id="3" --tcp-server-port="2096" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
+screen -dmS app0 go run main.go --instance="devnet" --instance-id="0" --tcp-server-port="2053" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
+screen -dmS app1 go run main.go --instance="devnet" --instance-id="1" --tcp-server-port="2083" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
+screen -dmS app2 go run main.go --instance="devnet" --instance-id="2" --tcp-server-port="2087" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
+screen -dmS app3 go run main.go --instance="devnet" --instance-id="3" --tcp-server-port="2096" --new-devnet --run-testnet-script --network="devnet" --set-genesis="file" --forging --hcaptcha-secret="0x0000000000000000000000000000000000000000" --faucet-testnet-enabled="true" --delegator-enabled="true"  $extraArgs &
 
 wait
 
